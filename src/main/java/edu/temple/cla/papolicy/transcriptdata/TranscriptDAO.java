@@ -11,7 +11,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.apache.log4j.Logger;
 import org.hibernate.HibernateException;
-import org.hibernate.Query;
+import org.hibernate.query.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -25,7 +25,7 @@ import org.xml.sax.SAXException;
  */
 public class TranscriptDAO {
 
-    private static final Logger logger = Logger.getLogger(TranscriptDAO.class);
+    private static final Logger LOGGER = Logger.getLogger(TranscriptDAO.class);
     private Document doc;
     private Session dbSession;
 
@@ -59,7 +59,7 @@ public class TranscriptDAO {
      * @param file The file containing the XML file.
      */
     public void loadDocument(File file) {
-        logger.info("Loading " + file.getName());
+        LOGGER.info("Loading " + file.getName());
         try {          
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(false);
@@ -67,9 +67,9 @@ public class TranscriptDAO {
         DocumentBuilder builder = factory.newDocumentBuilder();
         doc = builder.parse(file);
         } catch (IOException | SAXException | ParserConfigurationException ex) {
-            logger.fatal("Error Parsing " + file.getAbsolutePath(), ex);
+            LOGGER.fatal("Error Parsing " + file.getAbsolutePath(), ex);
         } finally {
-            logger.info("End loading " + file.getName());
+            LOGGER.info("End loading " + file.getName());
         }
         
     }
@@ -87,57 +87,79 @@ public class TranscriptDAO {
      * @param e The DOM element representing a Transcript record
      */
     public void insertIntoDatabase(Element e) {
-        Query houseCommitteeHqlQuery
-                = dbSession.createQuery("from CommitteeAliases c where c.ctyCode like '1%' and c.alternateName like :name");
-        Query senateCommitteeHqlQuery
-                = dbSession.createQuery("from CommitteeAliases c where c.ctyCode like '2%' and c.alternateName like :name");
+        Query<CommitteeAliases> houseCommitteeHqlQuery
+                = dbSession.createQuery("from CommitteeAliases c where c.ctyCode"
+                        + " like '1%' and c.alternateName like :name", 
+                        CommitteeAliases.class);
+        Query<CommitteeAliases> senateCommitteeHqlQuery
+                = dbSession.createQuery("from CommitteeAliases c where c.ctyCode"
+                        + " like '2%' and c.alternateName like :name",
+                        CommitteeAliases.class);
         Transaction tx = dbSession.beginTransaction();
         Transcript t = XMLUtil.readElement(Transcript.class, e);
         t.setId(e.getAttribute("id"));
         String transcriptID = t.getId();
-        logger.info("Inserting " + transcriptID);
+        LOGGER.info("Inserting " + transcriptID);
         dbSession.save(t);
         if (t != null) {
             Element bills = XMLUtil.getChildElement(e, "bills");
             if (bills != null) {
-                t.setBills(new HashSet<BillID>());
-                for (Element billIDElement : XMLUtil.getChildElements(bills)) {
-                    String billIDString = billIDElement.getAttribute("id");
-                    BillID billID = (BillID) dbSession.get(BillID.class, billIDString);
-                    if (billID == null) {
-                        billID = new BillID(billIDString);
-                        dbSession.save(billID);
-                    }
-                    t.getBills().add(billID);
-                    billID.getTranscripts().add(t);
-                }
+                t.setBills(new HashSet<>());
+                XMLUtil.getChildElements(bills)
+                        .stream()
+                        .map((billIDElement) -> billIDElement.getAttribute("id"))
+                        .map((billIDString) -> {
+                            BillID billID = dbSession.get(BillID.class, billIDString);
+                            if (billID == null) {
+                                billID = new BillID(billIDString);
+                                dbSession.save(billID);
+                            }
+                            return billID;
+                        })
+                        .map((billID) -> {
+                            t.getBills().add(billID);
+                            return billID;
+                        })
+                        .forEachOrdered((billID) -> {
+                            billID.getTranscripts().add(t);
+                        });
             }
             Element committees = XMLUtil.getChildElement(e, "committees");
             if (committees != null) {
-                t.setCommittees(new HashSet<CommitteeAliases>());
-                for (Element committee : XMLUtil.getChildElements(committees)) {
-                    String committeeAliasName = committee.getTextContent().trim();
-                    committeeAliasName = expandAmpersand(committeeAliasName);
-                    if (committeeAliasName.startsWith("Senate")) {
-                        committeeAliasName = committeeAliasName.substring(7);
-                        insertCommittee(senateCommitteeHqlQuery, 2, committeeAliasName, dbSession, t);
-                    } else {
-                        insertCommittee(houseCommitteeHqlQuery, 1, committeeAliasName, dbSession, t);
-                    }
-                }
+                t.setCommittees(new HashSet<>());
+                XMLUtil.getChildElements(committees)
+                        .stream()
+                        .map((committee) -> committee.getTextContent().trim())
+                        .map((committeeAliasName) -> expandAmpersand(committeeAliasName))
+                        .forEachOrdered((committeeAliasName) -> {
+                            if (committeeAliasName.startsWith("Senate")) {
+                                committeeAliasName = committeeAliasName.substring(7);
+                                insertCommittee(senateCommitteeHqlQuery, 2, committeeAliasName, dbSession, t);
+                            } else {
+                                insertCommittee(houseCommitteeHqlQuery, 1, committeeAliasName, dbSession, t);
+                            }
+                        });
             }
             Element witnesses = XMLUtil.getChildElement(e, "witnesses");
             if (witnesses != null) {
-                t.setWitnesses(new HashSet<Witness>());
-                for (Element witness : XMLUtil.getChildElements(witnesses)) {
-                    Witness elementWitness = XMLUtil.readElement(Witness.class, witness);
-                    dbSession.save(elementWitness);
-                    t.getWitnesses().add(elementWitness);
-                    elementWitness.setTranscript(t);
-                }
+                t.setWitnesses(new HashSet<>());
+                XMLUtil.getChildElements(witnesses)
+                        .stream()
+                        .map((witness) -> XMLUtil.readElement(Witness.class, witness))
+                        .map((elementWitness) -> {
+                            dbSession.save(elementWitness);
+                            return elementWitness;
+                        })
+                        .map((elementWitness) -> {
+                            t.getWitnesses().add(elementWitness);
+                            return elementWitness;
+                        })
+                        .forEachOrdered((elementWitness) -> {
+                            elementWitness.setTranscript(t);
+                        });
             }
         } else {
-            logger.error(transcriptID + "not saved to database");
+            LOGGER.error(transcriptID + "not saved to database");
         }
         try {
             tx.commit();
@@ -157,12 +179,12 @@ public class TranscriptDAO {
      * @param committeeAliasName The committee name
      * @param dbSession Hibernate Database Session
      * @param t Transcript object
-     * @throws HibernateException 
+     * @throws HibernateException If an error occurs.
      */
-    private void insertCommittee(Query committeeHqlQuery, int chamber, 
+    private void insertCommittee(Query<CommitteeAliases> committeeHqlQuery, int chamber, 
             String committeeAliasName, Session dbSession, Transcript t) 
             throws HibernateException {
-        committeeHqlQuery.setString("name", committeeAliasName);
+        committeeHqlQuery.setParameter("name", committeeAliasName);
         List<CommitteeAliases> list = committeeHqlQuery.list();
         if (list.isEmpty()) {
             CommitteeAliases newCommitteeAlias = new CommitteeAliases();

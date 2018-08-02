@@ -35,6 +35,7 @@ public class XMLUtil {
      * <dd>There is assumed to be a one-to-one correspondence between the
      * contained elements and the fields in the object being read. The class
      * must also have a no-argument constructor.</dd>
+     * </dl>
      * Empty elements are returned as null or zero.
      *
      * @param <T> the type of the returned object
@@ -81,10 +82,10 @@ public class XMLUtil {
      * @param childType the type of the child element
      * @param e The element
      * @return The value as the corresponding wrapper type
-     * @throws NoSuchMethodException
-     * @throws IllegalAccessException
-     * @throws InstantiationException
-     * @throws InvocationTargetException
+     * @throws NoSuchMethodException Constructor for wrapper type cannot be found
+     * @throws IllegalAccessException Constructor is not accessable
+     * @throws InstantiationException Attempt to construct an abstract class
+     * @throws InvocationTargetException The constructor threw an exception
      */
     public static Object readPrimitive(Class childType, Element e)
             throws NoSuchMethodException, IllegalAccessException,

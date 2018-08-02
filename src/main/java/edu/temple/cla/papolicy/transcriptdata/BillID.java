@@ -16,7 +16,7 @@ public class BillID {
 
 
     private String billID;
-    private Set<Transcript> transcripts = new HashSet<Transcript>();
+    private Set<Transcript> transcripts = new HashSet<>();
 
     public BillID() {}
     public BillID(String billID) {this.billID = billID;}

@@ -15,7 +15,7 @@ import org.w3c.dom.Element;
  */
 public class Main {
 
-    private final static Logger logger = Logger.getLogger(Main.class);
+    private final static Logger LOGGER = Logger.getLogger(Main.class);
 
     /**
      * Main method
@@ -25,7 +25,7 @@ public class Main {
      */
     public static void main(String[] args) {
         BasicConfigurator.configure();
-        logger.setLevel(Level.INFO);
+        LOGGER.setLevel(Level.INFO);
         File directory = new File(args[0]);
         if (directory.isDirectory()) {
             File[] files = directory.listFiles();
@@ -33,7 +33,7 @@ public class Main {
         } else {
             processFile(directory);
         }
-        logger.info("Done processing");
+        LOGGER.info("Done processing");
         System.exit(0);
     }
 
@@ -50,7 +50,7 @@ public class Main {
         Document doc = transcriptDAO.getDoc();
         e = doc.getDocumentElement();
         loadTranscripts(transcriptDAO, e);
-        logger.info("Done processing " + file.getName());
+        LOGGER.info("Done processing " + file.getName());
         transcriptDAO.closeSession();
     }
 
@@ -65,9 +65,9 @@ public class Main {
         if (e.getNodeName().equals("transcript")) {
             transcriptDAO.insertIntoDatabase(e);
         } else {
-            for (Element child : XMLUtil.getChildElements(e)) {
+            XMLUtil.getChildElements(e).forEach((child) -> {
                 loadTranscripts(transcriptDAO, child);
-            }
+            });
         }
     }
 
