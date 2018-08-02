@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<!-- Generated 04 Oct 2010 by copying CommitteeAliases.hbm.xml -->
+<hibernate-mapping>
+  <class catalog="PAPolicy_Copy" name="edu.temple.cla.papolicy.transcriptdata.BillID" table="BillID">
+    <id name="billID" type="java.lang.String">
+      <column name="billID"/>
+    </id>
+    <set cascade="save-update" name="transcripts" table="Transcript_BillID">
+      <key column="BillID"/>
+      <many-to-many class="edu.temple.cla.papolicy.transcriptdata.Transcript" column="TranscriptID"/>
+    </set>
+  </class>
+</hibernate-mapping>

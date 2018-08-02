@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<!-- Generated Sep 23, 2010 3:30:20 PM by Hibernate Tools 3.2.1.GA -->
+<hibernate-mapping>
+  <class catalog="PAPolicy_Copy" name="edu.temple.cla.papolicy.transcriptdata.Witness" node="witness" table="Witness">
+    <id name="id" type="java.lang.Integer">
+      <column name="ID"/>
+      <generator class="native"/>
+    </id>
+    <property name="salutation" node="salutation" type="string">
+      <column name="salutation"/>
+    </property>
+    <property name="firstName" node="firstName" type="string">
+      <column name="firstName"/>
+    </property>
+    <property name="middleName" node="middleName" type="string">
+      <column name="middleName"/>
+    </property>
+    <property name="suffix" node="suffix" type="string">
+      <column name="suffix"/>
+    </property>
+    <property name="lastName" node="lastName" type="string">
+      <column name="lastName"/>
+    </property>
+    <property name="title" node="title" type="string">
+      <column name="title"/>
+    </property>
+    <property name="testimonyURL" node="testimonyURL" type="string">
+      <column name="testimonyURL"/>
+    </property>
+    <many-to-one class="edu.temple.cla.papolicy.transcriptdata.Transcript" column="TranscriptID" name="transcript"/>
+  </class>
+</hibernate-mapping>

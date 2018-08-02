@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-reverse-engineering PUBLIC
+"-//Hibernate/Hibernate Reverse Engineering DTD 3.0//EN"
+"http://www.hibernate.org/dtd/hibernate-reverse-engineering-3.0.dtd">
+<hibernate-reverse-engineering>
+  <schema-selection match-catalog="PAPolicy"/>
+  <table-filter match-name="Witness"/>
+  <table-filter match-name="Transcript"/>
+  <table-filter match-name="CommitteeAliases"/>
+  <table-filter match-name="BillID"/>
+</hibernate-reverse-engineering>
