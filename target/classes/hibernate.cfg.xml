@@ -5,8 +5,8 @@
     <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
     <property name="hibernate.connection.driver_class">com.mysql.jdbc.Driver</property>
     <property name="hibernate.connection.url">jdbc:mysql://localhost/PAPolicy_Copy</property>
-    <property name="hibernate.connection.username">wolfgang</property>
-    <property name="hibernate.connection.password">pudexwra</property>
+    <property name="hibernate.connection.username">paul</property>
+    <property name="hibernate.connection.password">secret</property>
     <mapping resource="CommitteeAliases.hbm.xml"/>
     <mapping resource="Witness.hbm.xml"/>
     <mapping resource="Transcript.hbm.xml"/>

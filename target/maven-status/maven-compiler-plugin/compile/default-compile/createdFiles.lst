@@ -1,0 +1,8 @@
+edu\temple\cla\papolicy\transcriptdata\Transcript.class
+edu\temple\cla\papolicy\xmlutil\XMLUtil.class
+edu\temple\cla\papolicy\transcriptdata\NewHibernateUtil.class
+edu\temple\cla\papolicy\transcriptdata\Witness.class
+edu\temple\cla\papolicy\transcriptdata\BillID.class
+edu\temple\cla\papolicy\transcriptdata\CommitteeAliases.class
+edu\temple\cla\papolicy\uploadtranscriptdata\Main.class
+edu\temple\cla\papolicy\transcriptdata\TranscriptDAO.class

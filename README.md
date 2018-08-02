@@ -1,10 +1,8 @@
-# Pennsylvania Policy Database Upload Bills Data Tool.
+# Pennsylvania Policy Database Upload House Hearing Transcript Data Tool.
 
 This is a stand-alone program to upload the data from the Pennsylvania Legislature 
-Web Site bill history xml file to the PAPolicy_Copy database. It includes the 
-analysis of the bill history to determine the final state of the bill in both 
-the legislature houses and the governor.
+Web Site House Hearing Transcript xml file to the PAPolicy_Copy database. 
 
 It can also be used as a library for the PPDBApp so that the file upload for
-Bills Data is loaded into the database.
+Transcrupt is loaded into the database.
 
