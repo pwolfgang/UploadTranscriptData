@@ -1,11 +1,12 @@
 package edu.temple.cla.papolicy.transcriptdata;
 
 import edu.temple.cla.papolicy.xmlutil.XMLUtil;
-import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.HashSet;
@@ -31,23 +32,15 @@ import org.xml.sax.SAXException;
 public class TranscriptDAO {
 
     private static final Logger LOGGER = Logger.getLogger(TranscriptDAO.class);
-    private Document doc;
+    private final SessionFactory factory;
     private Session dbSession;
 
     /**
-     * Constructor. Initializes the SessionFactory singleton.
+     * Constructor. 
+     * @param factory The SessionFactory
      */
-    public TranscriptDAO() {
-        SessionFactory factory = NewHibernateUtil.getSessionFactory();
-        dbSession = factory.openSession();
-    }
-
-    /**
-     * Close the database session
-     */
-    public void closeSession() {
-        dbSession.close();
-        dbSession = null;
+    public TranscriptDAO(SessionFactory factory) {
+        this.factory = factory;
     }
 
     /**
@@ -56,39 +49,51 @@ public class TranscriptDAO {
      * @param fileName The name of the file containing the XML file.
      */
     public void loadDocument(String fileName) {
-        loadDocument(new File(fileName));
+        try {
+            LOGGER.info("Begin loading file " + fileName);
+            loadDocument(new FileInputStream(fileName));
+            LOGGER.info("Finished loading file " + fileName);
+        } catch (FileNotFoundException ex) {
+            LOGGER.error("File " + fileName + " not found", ex);
+        }
     }
 
     /**
      * Loads the transcript XML file into the DOM tree.
      *
-     * @param file The file containing the XML file.
+     * @param in The input Stream
      */
-    public void loadDocument(File file) {
-        LOGGER.info("Loading " + file.getName());
+    public void loadDocument(InputStream in) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(false);
             factory.setValidating(false);
             DocumentBuilder builder = factory.newDocumentBuilder();
-            doc = builder.parse(file);
+            Document doc = builder.parse(in);
+            loadTranscripts(doc.getDocumentElement());
         } catch (IOException | SAXException | ParserConfigurationException ex) {
-            LOGGER.fatal("Error Parsing " + file.getAbsolutePath(), ex);
-        } finally {
-            LOGGER.info("End loading " + file.getName());
+            LOGGER.fatal("Error Parsing ", ex);
         }
 
     }
 
     /**
-     * Accessor for the document DOM tree
-     *
-     * @return The document DOM
+     * Method to traverse the DOM tree and insert any transcript elements
+     * into the database
+     * 
+     * @param e Root element to be searched.
      */
-    public Document getDoc() {
-        return doc;
+    private void loadTranscripts(Element e) {
+        dbSession = factory.openSession();
+        if (e.getNodeName().equals("transcript")) {
+            insertIntoDatabase(e);
+        } else {
+            XMLUtil.getChildElements(e).forEach((child) -> {
+                loadTranscripts(child);
+            });
+        }
+        dbSession.close();
     }
-
     /**
      * Method to insert an element (Transcript record) into the database
      *
