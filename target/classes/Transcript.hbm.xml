@@ -25,6 +25,9 @@
     <property name="hearingDay" node="hearingDay" type="java.lang.Integer">
       <column name="hearingDay"/>
     </property>
+    <property name="hearingDate" node="hearingDate" type="java.util.Date">
+        <column name="hearingDate"/>
+    </property>
     <property name="hearingLocation" node="hearingLocation" type="string">
       <column name="hearingLocation"/>
     </property>
@@ -39,6 +42,9 @@
     </property>
     <property name="receviedDay" node="receviedDay" type="java.lang.Integer">
       <column name="receivedDay"/>
+    </property>
+    <property name="receivedDate" node="receivedDate" type="java.util.Date">
+        <column name="receivedDate"/>
     </property>
     <property name="comments" node="comments" type="string">
       <column name="comments"/>
