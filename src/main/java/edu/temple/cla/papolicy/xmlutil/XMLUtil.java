@@ -44,6 +44,7 @@ public class XMLUtil {
      * @return The object that corresponds to the element (primitive types will
      * be wrapped)
      */
+    @SuppressWarnings("unchecked")
     public static <T> T readElement(Class<T> clazz, Element e) {
         Object result = null;
         try {
@@ -87,14 +88,14 @@ public class XMLUtil {
      * @throws InstantiationException Attempt to construct an abstract class
      * @throws InvocationTargetException The constructor threw an exception
      */
-    public static Object readPrimitive(Class childType, Element e)
+    public static Object readPrimitive(Class<?> childType, Element e)
             throws NoSuchMethodException, IllegalAccessException,
             InstantiationException, InvocationTargetException {
         Object result = null;
         String text = e.getTextContent().trim();
         if (!text.isEmpty()) {
-            Class wrapper = ClassUtils.primitiveToWrapper(childType);
-            Constructor c = wrapper.getDeclaredConstructor(String.class);
+            Class<?> wrapper = ClassUtils.primitiveToWrapper(childType);
+            Constructor<?> c = wrapper.getDeclaredConstructor(String.class);
             result = c.newInstance(text);
         }
         return result;

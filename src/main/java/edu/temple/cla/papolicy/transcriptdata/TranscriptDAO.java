@@ -4,6 +4,10 @@ import edu.temple.cla.papolicy.xmlutil.XMLUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import javax.xml.parsers.DocumentBuilder;
@@ -21,6 +25,7 @@ import org.xml.sax.SAXException;
 
 /**
  * Data Access Object for the Transcript table.
+ *
  * @author Paul Wolfgang
  */
 public class TranscriptDAO {
@@ -30,14 +35,13 @@ public class TranscriptDAO {
     private Session dbSession;
 
     /**
-     * Constructor.
-     * Initializes the SessionFactory singleton.
+     * Constructor. Initializes the SessionFactory singleton.
      */
     public TranscriptDAO() {
         SessionFactory factory = NewHibernateUtil.getSessionFactory();
         dbSession = factory.openSession();
     }
-    
+
     /**
      * Close the database session
      */
@@ -48,6 +52,7 @@ public class TranscriptDAO {
 
     /**
      * Loads the transcript XML file into the DOM tree.
+     *
      * @param fileName The name of the file containing the XML file.
      */
     public void loadDocument(String fileName) {
@@ -56,26 +61,28 @@ public class TranscriptDAO {
 
     /**
      * Loads the transcript XML file into the DOM tree.
+     *
      * @param file The file containing the XML file.
      */
     public void loadDocument(File file) {
         LOGGER.info("Loading " + file.getName());
-        try {          
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(false);
-        factory.setValidating(false);
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        doc = builder.parse(file);
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(false);
+            factory.setValidating(false);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            doc = builder.parse(file);
         } catch (IOException | SAXException | ParserConfigurationException ex) {
             LOGGER.fatal("Error Parsing " + file.getAbsolutePath(), ex);
         } finally {
             LOGGER.info("End loading " + file.getName());
         }
-        
+
     }
 
     /**
      * Accessor for the document DOM tree
+     *
      * @return The document DOM
      */
     public Document getDoc() {
@@ -84,12 +91,13 @@ public class TranscriptDAO {
 
     /**
      * Method to insert an element (Transcript record) into the database
+     *
      * @param e The DOM element representing a Transcript record
      */
     public void insertIntoDatabase(Element e) {
         Query<CommitteeAliases> houseCommitteeHqlQuery
                 = dbSession.createQuery("from CommitteeAliases c where c.ctyCode"
-                        + " like '1%' and c.alternateName like :name", 
+                        + " like '1%' and c.alternateName like :name",
                         CommitteeAliases.class);
         Query<CommitteeAliases> senateCommitteeHqlQuery
                 = dbSession.createQuery("from CommitteeAliases c where c.ctyCode"
@@ -97,69 +105,78 @@ public class TranscriptDAO {
                         CommitteeAliases.class);
         Transaction tx = dbSession.beginTransaction();
         Transcript t = XMLUtil.readElement(Transcript.class, e);
+        if (t.getHearingYear() != null && t.getHearingMonth() != null && t.getHearingDay() != null) {
+            LocalDate hearingDate = LocalDate.of(t.getHearingYear(), t.getHearingMonth(), t.getHearingDay());
+            t.setHearingDate(Date.from(hearingDate.atStartOfDay().toInstant(ZoneOffset.UTC)));
+        } else {
+            t.setHearingDate(null);
+        }
+        if (t.getReceivedYear() != null && t.getReceivedMonth() != null && t.getReceviedDay() != null) {
+            LocalDate receivedDate = LocalDate.of(t.getReceivedYear(), t.getReceivedMonth(), t.getReceviedDay());
+            t.setReceivedDate(Date.from(receivedDate.atStartOfDay().toInstant(ZoneOffset.UTC)));
+        } else {
+            t.setReceivedDate(null);
+        }
+        
         t.setId(e.getAttribute("id"));
         String transcriptID = t.getId();
         LOGGER.info("Inserting " + transcriptID);
         dbSession.save(t);
-        if (t != null) {
-            Element bills = XMLUtil.getChildElement(e, "bills");
-            if (bills != null) {
-                t.setBills(new HashSet<>());
-                XMLUtil.getChildElements(bills)
-                        .stream()
-                        .map((billIDElement) -> billIDElement.getAttribute("id"))
-                        .map((billIDString) -> {
-                            BillID billID = dbSession.get(BillID.class, billIDString);
-                            if (billID == null) {
-                                billID = new BillID(billIDString);
-                                dbSession.save(billID);
-                            }
-                            return billID;
-                        })
-                        .map((billID) -> {
-                            t.getBills().add(billID);
-                            return billID;
-                        })
-                        .forEachOrdered((billID) -> {
-                            billID.getTranscripts().add(t);
-                        });
-            }
-            Element committees = XMLUtil.getChildElement(e, "committees");
-            if (committees != null) {
-                t.setCommittees(new HashSet<>());
-                XMLUtil.getChildElements(committees)
-                        .stream()
-                        .map((committee) -> committee.getTextContent().trim())
-                        .map((committeeAliasName) -> expandAmpersand(committeeAliasName))
-                        .forEachOrdered((committeeAliasName) -> {
-                            if (committeeAliasName.startsWith("Senate")) {
-                                committeeAliasName = committeeAliasName.substring(7);
-                                insertCommittee(senateCommitteeHqlQuery, 2, committeeAliasName, dbSession, t);
-                            } else {
-                                insertCommittee(houseCommitteeHqlQuery, 1, committeeAliasName, dbSession, t);
-                            }
-                        });
-            }
-            Element witnesses = XMLUtil.getChildElement(e, "witnesses");
-            if (witnesses != null) {
-                t.setWitnesses(new HashSet<>());
-                XMLUtil.getChildElements(witnesses)
-                        .stream()
-                        .map((witness) -> XMLUtil.readElement(Witness.class, witness))
-                        .map((elementWitness) -> {
-                            dbSession.save(elementWitness);
-                            return elementWitness;
-                        })
-                        .map((elementWitness) -> {
-                            t.getWitnesses().add(elementWitness);
-                            return elementWitness;
-                        })
-                        .forEachOrdered((elementWitness) -> {
-                            elementWitness.setTranscript(t);
-                        });
-            }
-        } else {
-            LOGGER.error(transcriptID + "not saved to database");
+        Element bills = XMLUtil.getChildElement(e, "bills");
+        if (bills != null) {
+            t.setBills(new HashSet<>());
+            XMLUtil.getChildElements(bills)
+                    .stream()
+                    .map((billIDElement) -> billIDElement.getAttribute("id"))
+                    .map((billIDString) -> {
+                        BillID billID = dbSession.get(BillID.class, billIDString);
+                        if (billID == null) {
+                            billID = new BillID(billIDString);
+                            dbSession.save(billID);
+                        }
+                        return billID;
+                    })
+                    .map((billID) -> {
+                        t.getBills().add(billID);
+                        return billID;
+                    })
+                    .forEachOrdered((billID) -> {
+                        billID.getTranscripts().add(t);
+                    });
+        }
+        Element committees = XMLUtil.getChildElement(e, "committees");
+        if (committees != null) {
+            t.setCommittees(new HashSet<>());
+            XMLUtil.getChildElements(committees)
+                    .stream()
+                    .map((committee) -> committee.getTextContent().trim())
+                    .map((committeeAliasName) -> expandAmpersand(committeeAliasName))
+                    .forEachOrdered((committeeAliasName) -> {
+                        if (committeeAliasName.startsWith("Senate")) {
+                            committeeAliasName = committeeAliasName.substring(7);
+                            insertCommittee(senateCommitteeHqlQuery, 2, committeeAliasName, dbSession, t);
+                        } else {
+                            insertCommittee(houseCommitteeHqlQuery, 1, committeeAliasName, dbSession, t);
+                        }
+                    });
+        }
+        Element witnesses = XMLUtil.getChildElement(e, "witnesses");
+        if (witnesses != null) {
+            t.setWitnesses(new HashSet<>());
+            XMLUtil.getChildElements(witnesses)
+                    .stream()
+                    .map((witness) -> XMLUtil.readElement(Witness.class, witness))
+                    .map((elementWitness) -> {
+                        dbSession.save(elementWitness);
+                        return elementWitness;
+                    })
+                    .map((elementWitness) -> {
+                        t.getWitnesses().add(elementWitness);
+                        return elementWitness;
+                    })
+                    .forEachOrdered((elementWitness) -> {
+                        elementWitness.setTranscript(t);
+                    });
         }
         try {
             tx.commit();
@@ -174,6 +191,7 @@ public class TranscriptDAO {
      * Method to insert a Committee into the Transcript object. If this
      * committee name is not currently in the database it is added to the
      * database
+     *
      * @param committeeHqlQuery Query to search for the committee name
      * @param chamber Chamber 1 for House, 2 for Senate
      * @param committeeAliasName The committee name
@@ -181,14 +199,14 @@ public class TranscriptDAO {
      * @param t Transcript object
      * @throws HibernateException If an error occurs.
      */
-    private void insertCommittee(Query<CommitteeAliases> committeeHqlQuery, int chamber, 
-            String committeeAliasName, Session dbSession, Transcript t) 
+    private void insertCommittee(Query<CommitteeAliases> committeeHqlQuery, int chamber,
+            String committeeAliasName, Session dbSession, Transcript t)
             throws HibernateException {
         committeeHqlQuery.setParameter("name", committeeAliasName);
         List<CommitteeAliases> list = committeeHqlQuery.list();
         if (list.isEmpty()) {
             CommitteeAliases newCommitteeAlias = new CommitteeAliases();
-            newCommitteeAlias.setCtyCode((short) (chamber*100 + 99));
+            newCommitteeAlias.setCtyCode((short) (chamber * 100 + 99));
             newCommitteeAlias.setChamber((short) chamber);
             newCommitteeAlias.setAlternateName(committeeAliasName);
             if (chamber == 1) {
@@ -213,6 +231,7 @@ public class TranscriptDAO {
 
     /**
      * Method to replace ampersand characters with the word and.
+     *
      * @param s String to be processed
      * @return String with any occurrence of &amp; replaced with &quot;and&quot;
      */

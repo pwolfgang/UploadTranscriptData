@@ -19,11 +19,13 @@ public class Transcript  implements java.io.Serializable {
      private Integer hearingYear;
      private Integer hearingMonth;
      private Integer hearingDay;
+     private Date hearingDate;
      private String hearingLocation;
      private Integer pages;
      private Integer receivedYear;
      private Integer receivedMonth;
      private Integer receviedDay;
+     private Date receivedDate;
      private String comments;
      private Date datePresentedToHouse;
      private String summary;
@@ -44,9 +46,9 @@ public class Transcript  implements java.io.Serializable {
     }
     public Transcript(String id, Integer year, Integer number, 
             Boolean budgetRelated, Integer hearingYear, Integer hearingMonth,
-            Integer hearingDay, String hearingLocation, Integer pages,
+            Integer hearingDay, Date hearingDate, String hearingLocation, Integer pages,
             Integer receivedYear, Integer receivedMonth, Integer receivedDay,
-            String comments, Date datePresentedToHouse, String summary,
+            Date receivedDate, String comments, Date datePresentedToHouse, String summary,
             Boolean hasAudio, String audioNotes, Boolean hasVideo,
             String videoNotes, String transcriptUrl) {
        this.id = id;
@@ -56,11 +58,13 @@ public class Transcript  implements java.io.Serializable {
        this.hearingYear = hearingYear;
        this.hearingMonth = hearingMonth;
        this.hearingDay = hearingDay;
+       this.hearingDate = hearingDate;
        this.hearingLocation = hearingLocation;
        this.pages = pages;
        this.receivedYear = receivedYear;
        this.receivedMonth = receivedMonth;
        this.receviedDay = receivedDay;
+       this.receivedDate = receivedDate;
        this.comments = comments;
        this.datePresentedToHouse = datePresentedToHouse;
        this.summary = summary;
@@ -120,6 +124,15 @@ public class Transcript  implements java.io.Serializable {
     public void setHearingDay(Integer hearingDay) {
         this.hearingDay = hearingDay;
     }
+    
+    public Date getHearingDate() {
+        return this.hearingDate;
+    }
+    
+    public void setHearingDate(Date hearingDate) {
+        this.hearingDate = hearingDate;
+    }
+    
     public String getHearingLocation() {
         return this.hearingLocation;
     }
@@ -155,6 +168,15 @@ public class Transcript  implements java.io.Serializable {
     public void setReceviedDay(Integer receivedDay) {
         this.receviedDay = receivedDay;
     }
+    
+    public Date getReceivedDate() {
+        return this.receivedDate;
+    }
+    
+    public void setReceivedDate(Date receivedDate) {
+        this.receivedDate = receivedDate;
+    }
+    
     public String getComments() {
         return this.comments;
     }
