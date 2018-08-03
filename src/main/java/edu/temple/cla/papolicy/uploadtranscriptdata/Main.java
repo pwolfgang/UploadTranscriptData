@@ -1,17 +1,16 @@
 package edu.temple.cla.papolicy.uploadtranscriptdata;
 
 import edu.temple.cla.papolicy.transcriptdata.TranscriptDAO;
-import edu.temple.cla.papolicy.xmlutil.XMLUtil;
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.Map;
 import java.util.Properties;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.hibernate.HibernateException;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 /**
  * Program to load the Transcript XML files into the database.
@@ -54,7 +53,14 @@ public class Main {
             Properties props = new Properties();
             FileInputStream in = new FileInputStream(file);
             props.load(in);
-            return new Configuration()
+            return configureSessionFactory(props);
+        } catch (Exception ex) {
+            throw new RuntimeException("Error configuring SessionFactory", ex);
+        }
+    }
+
+    public static SessionFactory configureSessionFactory(Properties props) throws HibernateException {
+        return new Configuration()
                 .setProperty("hibernate.connection.driver_class", props.getProperty("jdbc.driver"))
                 .setProperty("hibernate.connection.url", props.getProperty("jdbc.url"))
                 .setProperty("hibernate.connection.username", props.getProperty("jdbc.username"))
@@ -65,9 +71,6 @@ public class Main {
                 .addResource("BillID.hbm.xml")
                 .configure()
                 .buildSessionFactory();
-        } catch (Exception ex) {
-            throw new RuntimeException("Error configuring SessionFactory", ex);
-        }
     }
 
     /**
