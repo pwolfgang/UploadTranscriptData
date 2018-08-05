@@ -69,7 +69,6 @@ public class Main {
                 .addResource("Witness.hbm.xml")
                 .addResource("CommitteeAliases.hbm.xml")
                 .addResource("BillID.hbm.xml")
-                .configure()
                 .buildSessionFactory();
     }
 
