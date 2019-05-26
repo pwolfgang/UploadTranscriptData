@@ -20,6 +20,7 @@ import org.hibernate.query.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.query.NativeQuery;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
@@ -32,15 +33,31 @@ import org.xml.sax.SAXException;
 public class TranscriptDAO {
 
     private static final Logger LOGGER = Logger.getLogger(TranscriptDAO.class);
-    private final SessionFactory factory;
+    private final SessionFactory sessionFactory;
     private Session dbSession;
+    private final Integer fileID;
+    private final Integer tableID;
 
     /**
      * Constructor. 
      * @param factory The SessionFactory
      */
     public TranscriptDAO(SessionFactory factory) {
-        this.factory = factory;
+        this.sessionFactory = factory;
+        this.fileID = null;
+        this.tableID = null;
+    }
+
+    /**
+     * Constructor. 
+     * @param factory The SessionFactory
+     * @param fileID The ID of the file object associated with this batch of Transcripts
+     * @param tableID The ID of the table type
+     */
+    public TranscriptDAO(SessionFactory factory, int fileID, int tableID) {
+        this.sessionFactory = factory;
+        this.fileID = fileID;
+        this.tableID = tableID;
     }
 
     /**
@@ -84,7 +101,7 @@ public class TranscriptDAO {
      * @param e Root element to be searched.
      */
     private void loadTranscripts(Element e) {
-        dbSession = factory.openSession();
+        dbSession = sessionFactory.openSession();
         if (e.getNodeName().equals("transcript")) {
             insertIntoDatabase(e);
         } else {
@@ -100,6 +117,8 @@ public class TranscriptDAO {
      * @param e The DOM element representing a Transcript record
      */
     public void insertIntoDatabase(Element e) {
+        String insertIntoFileDocumentTemplate
+                = "insert into FileDocument values ('%s', %d, %d)";
         Query<CommitteeAliases> houseCommitteeHqlQuery
                 = dbSession.createQuery("from CommitteeAliases c where c.ctyCode"
                         + " like '1%' and c.alternateName like :name",
@@ -182,6 +201,12 @@ public class TranscriptDAO {
                     .forEachOrdered((elementWitness) -> {
                         elementWitness.setTranscript(t);
                     });
+        }
+        if (fileID != null) {
+            String insertIntoFileDocumentQuery =
+                    String.format(insertIntoFileDocumentTemplate, t.getId(), tableID, fileID);
+            LOGGER.info(insertIntoFileDocumentQuery);
+            dbSession.createNativeQuery(insertIntoFileDocumentQuery).executeUpdate();
         }
         try {
             tx.commit();
